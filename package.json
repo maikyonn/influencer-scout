@@ -10,6 +10,8 @@
   "scripts": {
     "dev:api": "bun run --cwd apps/influencer-scout-api dev",
     "dev:worker": "bun run --cwd apps/influencer-scout-api dev:worker",
+    "dev:web": "bun run --cwd apps/influencer-scout-web dev",
+    "dev:mcp": "bun run --cwd apps/mcp-server dev",
     "build": "bun run --workspaces build",
     "test": "bun run --workspaces test",
     "lint": "echo 'no lint configured yet'"

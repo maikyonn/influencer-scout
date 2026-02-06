@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: influencer-scout-web
+    runtime: docker
+    plan: free
+    branch: main
+    autoDeploy: true
+    dockerfilePath: ./apps/influencer-scout-web/Dockerfile
+    dockerContext: .
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: INFLUENCER_SCOUT_BASE_URL
+        value: https://api.penni-ai.com
+      - key: INFLUENCER_SCOUT_API_KEY
+        sync: false
+
