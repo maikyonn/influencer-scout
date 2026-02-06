@@ -82,9 +82,7 @@ jobs:
           username: ${{ env.HETZNER_USER || 'ubuntu' }}
           key: ${{ env.HETZNER_SSH_KEY }}
           port: ${{ env.HETZNER_SSH_PORT || 22 }}
-          source: |
-            infra/hetzner/compose/docker-compose.ghcr.yml
-            infra/hetzner/compose/sql/init.sql
+          source: infra/hetzner/compose/docker-compose.ghcr.yml,infra/hetzner/compose/sql/init.sql
           target: /opt/influencer-scout/compose
           strip_components: 3
 
