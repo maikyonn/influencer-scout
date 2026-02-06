@@ -218,7 +218,10 @@
 	<header class="topbar">
 		<div class="brand">
 			<div class="logo">IS</div>
-			<div class="title">Influencer Scout</div>
+			<div class="brand-text">
+				<div class="title">Influencer Scout</div>
+				<div class="subbrand">a demo from penni ai ☕</div>
+			</div>
 		</div>
 	</header>
 
@@ -498,6 +501,11 @@
 		gap: 0.75rem;
 	}
 
+	.brand-text {
+		display: grid;
+		gap: 0.1rem;
+	}
+
 	.logo {
 		width: 2.4rem;
 		height: 2.4rem;
@@ -515,6 +523,12 @@
 	.title {
 		font-weight: 720;
 		letter-spacing: -0.02em;
+	}
+
+	.subbrand {
+		color: var(--muted2);
+		font-size: 0.84rem;
+		letter-spacing: 0.01em;
 	}
 
 	.grid {
