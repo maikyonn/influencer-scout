@@ -3,9 +3,10 @@ FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# Copy package files and install dependencies
-COPY package*.json ./
-RUN npm ci
+# Copy package files and install dependencies.
+# Note: we intentionally do not require package-lock.json (this repo uses Bun for dev).
+COPY package.json ./
+RUN npm install --no-audit --no-fund
 
 # Copy TypeScript config and source code
 COPY tsconfig.json ./
@@ -19,9 +20,9 @@ FROM node:20-slim
 
 WORKDIR /app
 
-# Copy package files and install production dependencies only
-COPY package*.json ./
-RUN npm ci --only=production
+# Copy package file and install production dependencies only.
+COPY package.json ./
+RUN npm install --omit=dev --no-audit --no-fund
 
 # Copy compiled code from builder stage
 COPY --from=builder /app/dist ./dist
