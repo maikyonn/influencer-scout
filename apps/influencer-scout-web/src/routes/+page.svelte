@@ -2,6 +2,7 @@
 	import { animate, stagger, remove } from 'animejs';
 	import { onMount } from 'svelte';
 	import InfluencerCard from '$lib/components/InfluencerCard.svelte';
+	import appIcon from '$lib/assets/favicon.svg';
 	import type { WeaviateSearchResponse } from '$lib/types';
 
 	let query = $state('');
@@ -87,7 +88,9 @@
 
 	<header class="topbar">
 		<div class="brand">
-			<div class="logo">IC</div>
+			<div class="logo" aria-hidden="true">
+				<img class="logo-img" src={appIcon} alt="" />
+			</div>
 			<div class="brand-text">
 				<div class="title">Instant Coffee</div>
 				<div class="subbrand">a demo from penni ai ☕</div>
@@ -283,12 +286,16 @@
 		border-radius: 0.9rem;
 		display: grid;
 		place-items: center;
-		font-weight: 900;
-		letter-spacing: -0.03em;
-		color: #fffaf4;
 		background: linear-gradient(135deg, color-mix(in oklab, var(--accent) 70%, #fff7ee), color-mix(in oklab, var(--accent2) 85%, black));
 		box-shadow: 0 14px 45px color-mix(in oklab, var(--accent2) 14%, transparent);
 		border: 1px solid color-mix(in oklab, var(--accent2) 22%, transparent);
+	}
+
+	.logo-img {
+		width: 1.65rem;
+		height: 1.65rem;
+		display: block;
+		filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.25));
 	}
 
 	.title {
@@ -600,4 +607,3 @@
 		}
 	}
 </style>
-
