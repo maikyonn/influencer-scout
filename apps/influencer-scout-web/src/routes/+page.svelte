@@ -1,46 +1,16 @@
 <script lang="ts">
 	import { animate, stagger, remove } from 'animejs';
-	import { onDestroy, onMount } from 'svelte';
-	import Waterfall from '$lib/components/Waterfall.svelte';
+	import { onMount } from 'svelte';
 	import InfluencerCard from '$lib/components/InfluencerCard.svelte';
-	import { fmtInt } from '$lib/utils/format';
-	import type {
-		PipelineEventsResponse,
-		PipelineFinalArtifact,
-		PipelineJobStatus,
-		Platform,
-		WeaviateSearchResponse,
-		WaterfallTimingArtifact
-	} from '$lib/types';
+	import type { WeaviateSearchResponse } from '$lib/types';
 
-	type Mode = 'pipeline' | 'weaviate';
-
-	let mode: Mode = $state('pipeline');
-
-	// Shared controls
-	let platform: Platform | '' = $state('');
-
-	// Pipeline inputs/state
-	let businessDescription = $state('');
-	let pipelineBusy = $state(false);
-	let pipelineError = $state<string | null>(null);
-
-	let job: PipelineJobStatus | null = $state(null);
-	let timing: WaterfallTimingArtifact | null = $state(null);
-	let progressive: any | null = $state(null);
-	let final: PipelineFinalArtifact | null = $state(null);
-	let events: any[] = $state([]);
-	let lastEventId = $state(0);
-	let pollTimer: number | null = $state(null);
-
-	// Weaviate inputs/state
 	let query = $state('');
-	let weaviateBusy = $state(false);
-	let weaviateError = $state<string | null>(null);
-	let weaviateRes: WeaviateSearchResponse | null = $state(null);
+	let busy = $state(false);
+	let error = $state<string | null>(null);
+	let res = $state<WeaviateSearchResponse | null>(null);
 
 	async function apiJson<T>(path: string, init?: RequestInit & { json?: unknown }): Promise<{ status: number; data: T }> {
-		const res = await fetch(path, {
+		const r = await fetch(path, {
 			...init,
 			headers: {
 				...(init?.headers || {}),
@@ -50,136 +20,38 @@
 		});
 		let data: any = null;
 		try {
-			data = await res.json();
+			data = await r.json();
 		} catch {
 			// ignore
 		}
-		return { status: res.status, data };
+		return { status: r.status, data };
 	}
 
-	function stopPolling() {
-		if (pollTimer != null) {
-			window.clearInterval(pollTimer);
-			pollTimer = null;
-		}
-	}
-
-	async function refreshPipeline(jobId: string) {
-		const [jobRes, evRes] = await Promise.all([
-			apiJson<PipelineJobStatus>(`/api/pipeline/jobs/${jobId}`),
-			apiJson<PipelineEventsResponse>(`/api/pipeline/jobs/${jobId}/events?after=${lastEventId}`)
-		]);
-
-		if (jobRes.status === 200) job = jobRes.data;
-		if (evRes.status === 200 && Array.isArray((evRes.data as any).events)) {
-			const next = (evRes.data as any).events as any[];
-			if (next.length) {
-				events = [...events, ...next].slice(-300);
-				const maxId = next.reduce((m, e) => Math.max(m, Number(e.id || 0)), lastEventId);
-				lastEventId = maxId;
-			}
-		}
-
-		// Pull artifacts less frequently (and only when job exists)
-		if (jobRes.status === 200 && Math.random() < 0.35) {
-			const [timingRes, progRes] = await Promise.all([
-				apiJson<WaterfallTimingArtifact>(`/api/pipeline/jobs/${jobId}/artifacts/timing`),
-				apiJson<any>(`/api/pipeline/jobs/${jobId}/artifacts/progressive`)
-			]);
-			if (timingRes.status === 200) timing = timingRes.data;
-			if (progRes.status === 200) progressive = progRes.data;
-		}
-
-		if (jobRes.status === 200 && jobRes.data.status === 'completed' && !final) {
-			const finRes = await apiJson<PipelineFinalArtifact>(`/api/pipeline/jobs/${jobId}/results`);
-			if (finRes.status === 200) final = finRes.data;
-		}
-
-		if (jobRes.status === 200 && ['completed', 'error', 'cancelled'].includes(jobRes.data.status)) {
-			stopPolling();
-		}
-	}
-
-	async function startPipeline() {
-		stopPolling();
-		pipelineError = null;
-		final = null;
-		progressive = null;
-		timing = null;
-		events = [];
-		lastEventId = 0;
-		job = null;
-
-		if (!businessDescription.trim()) {
-			pipelineError = 'Tell us what you’re selling or promoting.';
-			return;
-		}
-
-		pipelineBusy = true;
-		try {
-			const { status, data } = await apiJson<any>('/api/pipeline/start', {
-				method: 'POST',
-				json: {
-					business_description: businessDescription.trim(),
-					top_n: 10,
-					platform: platform || undefined
-				}
-			});
-
-			if (status !== 202 || !data?.job_id) {
-				pipelineError = data?.message || data?.error || 'Could not start job.';
-				return;
-			}
-
-			const jobId = String(data.job_id);
-			await refreshPipeline(jobId);
-			pollTimer = window.setInterval(() => refreshPipeline(jobId), 1000);
-		} catch (e) {
-			pipelineError = e instanceof Error ? e.message : 'Network error';
-		} finally {
-			pipelineBusy = false;
-		}
-	}
-
-	async function cancelPipeline() {
-		if (!job?.job_id) return;
-		try {
-			await apiJson(`/api/pipeline/jobs/${job.job_id}/cancel`, { method: 'POST' });
-			await refreshPipeline(job.job_id);
-		} catch {
-			// ignore
-		}
-	}
-
-	async function runWeaviate() {
-		weaviateError = null;
-		weaviateRes = null;
+	async function runSearch() {
+		error = null;
+		res = null;
 
 		const q = query.trim();
 		if (!q) {
-			weaviateError = 'Type a query first.';
+			error = 'Type a query first.';
 			return;
 		}
 
-		weaviateBusy = true;
+		busy = true;
 		try {
 			const { status, data } = await apiJson<any>('/api/weaviate/search', {
 				method: 'POST',
-				json: {
-					query: q,
-					top_k: 10,
-					platform: platform || undefined
-				}
+				json: { query: q, top_k: 10 }
 			});
 			if (status !== 200) {
-				weaviateError = data?.message || data?.error || 'Search failed.';
+				error = data?.message || data?.error || 'Search failed.';
 				return;
 			}
-			weaviateRes = data as WeaviateSearchResponse;
+			res = data as WeaviateSearchResponse;
 		} catch (e) {
-			weaviateError = e instanceof Error ? e.message : 'Network error';
+			error = e instanceof Error ? e.message : 'Network error';
 		} finally {
-			weaviateBusy = false;
+			busy = false;
 		}
 	}
 
@@ -204,8 +76,6 @@
 			easing: 'easeInOutSine'
 		});
 	});
-
-	onDestroy(stopPolling);
 </script>
 
 <div class="shell">
@@ -217,9 +87,9 @@
 
 	<header class="topbar">
 		<div class="brand">
-			<div class="logo">IS</div>
+			<div class="logo">IC</div>
 			<div class="brand-text">
-				<div class="title">Influencer Scout</div>
+				<div class="title">Instant Coffee</div>
 				<div class="subbrand">a demo from penni ai ☕</div>
 			</div>
 		</div>
@@ -229,25 +99,15 @@
 		<section class="hero">
 			<div class="kicker" data-hero>
 				<span class="bean" aria-hidden="true"></span>
-				Brew a shortlist in minutes.
+				Instant, rustic, minimal.
 			</div>
 			<h1 class="h1" data-hero>
-				Find creators that actually fit
-				<span class="grad">your brand.</span>
+				Instant Coffee
+				<span class="grad">influencer search.</span>
 			</h1>
 			<p class="sub" data-hero>
-				Quick search for a first pour, or run the full pipeline to enrich profiles and rank them. Rustic UX, modern
-				stack.
+				A single Weaviate-powered search that returns up to 10 creators. No toggles. No filters. Just pour and go.
 			</p>
-
-			<div class="hero-ctas" data-hero>
-				<button class="cta" onclick={() => (mode = 'pipeline')} class:active={mode === 'pipeline'}>
-					Ranked Pipeline
-				</button>
-				<button class="cta ghost" onclick={() => (mode = 'weaviate')} class:active={mode === 'weaviate'}>
-					Quick Search
-				</button>
-			</div>
 
 			<div class="dev-ctas" data-hero>
 				<a class="cta dark" href="https://api.penni-ai.com/openapi.yaml" target="_blank" rel="noreferrer">API</a>
@@ -270,137 +130,48 @@
 
 		<section class="panel">
 			<div class="panel-head">
-				<div class="tabs">
-					<button class="tab" class:active={mode === 'pipeline'} onclick={() => (mode = 'pipeline')}>
-						Pipeline
-					</button>
-					<button class="tab" class:active={mode === 'weaviate'} onclick={() => (mode = 'weaviate')}>
-						Weaviate
-					</button>
-				</div>
-				<div class="hint">Public demo UI</div>
+				<div class="panel-title">Instant Coffee</div>
+				<div class="hint">Weaviate only, max 10</div>
 			</div>
 
 			<div class="panel-body">
-				<div class="controls">
-					<div class="field">
-						<label for="platform">Platform</label>
-						<select id="platform" bind:value={platform}>
-							<option value="">Any</option>
-							<option value="instagram">Instagram</option>
-							<option value="tiktok">TikTok</option>
-						</select>
-					</div>
+				<div class="field">
+					<label for="q">Query</label>
+					<input
+						id="q"
+						placeholder="Ex: austin coffee creators, cozy lifestyle, streetwear nyc"
+						bind:value={query}
+						onkeydown={(e) => e.key === 'Enter' && runSearch()}
+					/>
 				</div>
 
-				{#if mode === 'pipeline'}
-					<div class="field">
-						<label for="business_description">What are you promoting?</label>
-						<textarea
-							id="business_description"
-							rows="4"
-							placeholder="Ex: Specialty coffee brand in Austin. Looking for cozy lifestyle creators who post recipe-style videos and feel authentic."
-							bind:value={businessDescription}
-						></textarea>
-					</div>
+				<div class="row">
+					<div class="note">Any platform.</div>
+					<button class="run" disabled={busy} onclick={runSearch}>
+						{busy ? 'Brewing…' : 'Search'}
+					</button>
+				</div>
 
-					<div class="row">
-						<div class="note">Returns up to 10 influencers.</div>
-						<button class="run" disabled={pipelineBusy} onclick={startPipeline}>
-							{pipelineBusy ? 'Starting…' : 'Scout'}
-						</button>
-					</div>
+				{#if error}
+					<div class="alert danger">{error}</div>
+				{/if}
 
-					{#if pipelineError}
-						<div class="alert danger">{pipelineError}</div>
-					{/if}
-
-					{#if job}
-						<div class="status">
-							<div class="status-left">
-								<div class="status-pill">
-									<span class="dot"></span>
-									<span class="mono">{job.status}</span>
-								</div>
-								<div class="status-meta">
-									<div>Stage: <span class="mono">{job.current_stage || '—'}</span></div>
-									<div>Progress: <span class="mono">{fmtInt(job.progress)}%</span></div>
-								</div>
-							</div>
-							<button class="ghost-btn" disabled={job.status !== 'pending' && job.status !== 'running'} onclick={cancelPipeline}>
-								Cancel
-							</button>
+				{#if res?.candidates?.length}
+					<div class="block">
+						<div class="block-title">Candidates</div>
+						<div class="cards">
+							{#each res.candidates.slice(0, 10) as c (c.profile_url)}
+								<InfluencerCard
+									profile={{
+										profile_url: c.profile_url,
+										platform: c.platform,
+										display_name: c.display_name,
+										followers: c.followers
+									}}
+								/>
+							{/each}
 						</div>
-
-						<div class="block">
-							<div class="block-title">Waterfall</div>
-							<Waterfall {timing} />
-						</div>
-
-						<div class="block">
-							<div class="block-title">Live events</div>
-							<pre class="events mono">{events.map((e) => `[${e.ts}] ${e.type} ${JSON.stringify(e.data || {})}`).join('\n')}</pre>
-						</div>
-
-						{#if final?.profiles?.length}
-							<div class="block">
-								<div class="block-title">Top matches</div>
-								<div class="cards">
-									{#each final.profiles.slice(0, 10) as p (p.profile_url || p.url || p.display_name)}
-										<InfluencerCard profile={p} />
-									{/each}
-								</div>
-							</div>
-						{:else if progressive?.profiles?.length}
-							<div class="block">
-								<div class="block-title">In progress</div>
-								<div class="cards">
-									{#each progressive.profiles.slice(0, 10) as p (p.profile_url || p.url || p.display_name)}
-										<InfluencerCard profile={p} />
-									{/each}
-								</div>
-							</div>
-						{/if}
-					{/if}
-				{:else}
-					<div class="field">
-						<label for="weaviate_query">Query</label>
-						<input
-							id="weaviate_query"
-							placeholder="Ex: vegan skincare creators, UGC, micro-influencers"
-							bind:value={query}
-							onkeydown={(e) => e.key === 'Enter' && runWeaviate()}
-						/>
 					</div>
-
-					<div class="row">
-						<div class="note">Returns up to 10 candidates.</div>
-						<button class="run" disabled={weaviateBusy} onclick={runWeaviate}>
-							{weaviateBusy ? 'Searching…' : 'Search'}
-						</button>
-					</div>
-
-					{#if weaviateError}
-						<div class="alert danger">{weaviateError}</div>
-					{/if}
-
-					{#if weaviateRes?.candidates?.length}
-						<div class="block">
-							<div class="block-title">Candidates</div>
-							<div class="cards">
-								{#each weaviateRes.candidates.slice(0, 10) as c (c.profile_url)}
-									<InfluencerCard
-										profile={{
-											profile_url: c.profile_url,
-											platform: c.platform,
-											display_name: c.display_name,
-											followers: c.followers
-										}}
-									/>
-								{/each}
-							</div>
-						</div>
-					{/if}
 				{/if}
 			</div>
 		</section>
@@ -424,7 +195,7 @@
 		</div>
 
 		<div class="foot-row">
-			<div class="foot-left">Influencer Scout</div>
+			<div class="foot-left">Instant Coffee</div>
 			<div class="foot-right">
 				<a href="https://api.penni-ai.com" target="_blank" rel="noreferrer">API Host</a>
 				<a href="https://github.com/maikyonn/influencer-scout" target="_blank" rel="noreferrer">GitHub</a>
@@ -512,7 +283,7 @@
 		border-radius: 0.9rem;
 		display: grid;
 		place-items: center;
-		font-weight: 800;
+		font-weight: 900;
 		letter-spacing: -0.03em;
 		color: #fffaf4;
 		background: linear-gradient(135deg, color-mix(in oklab, var(--accent) 70%, #fff7ee), color-mix(in oklab, var(--accent2) 85%, black));
@@ -521,7 +292,7 @@
 	}
 
 	.title {
-		font-weight: 720;
+		font-weight: 760;
 		letter-spacing: -0.02em;
 	}
 
@@ -592,16 +363,9 @@
 
 	.sub {
 		color: var(--muted);
-		max-width: 44ch;
+		max-width: 48ch;
 		line-height: 1.35;
 		margin: 0 0 1.1rem;
-	}
-
-	.hero-ctas {
-		display: flex;
-		gap: 0.65rem;
-		flex-wrap: wrap;
-		margin-bottom: 1.2rem;
 	}
 
 	.cta {
@@ -621,13 +385,6 @@
 
 	.cta:hover {
 		transform: translateY(-1px);
-	}
-
-	.cta.ghost {
-		background: transparent;
-		color: var(--ink);
-		border: 1px solid color-mix(in oklab, var(--ink) 14%, transparent);
-		box-shadow: none;
 	}
 
 	.cta.dark {
@@ -661,24 +418,9 @@
 		background: color-mix(in oklab, white 88%, var(--paper));
 	}
 
-	.tabs {
-		display: flex;
-		gap: 0.5rem;
-	}
-
-	.tab {
-		border: 1px solid color-mix(in oklab, var(--ink) 14%, transparent);
-		background: transparent;
-		color: var(--ink);
-		padding: 0.5rem 0.75rem;
-		border-radius: 999px;
-		cursor: pointer;
-		font-weight: 650;
-	}
-
-	.tab.active {
-		border-color: color-mix(in oklab, var(--accent) 35%, transparent);
-		background: color-mix(in oklab, var(--accent) 14%, transparent);
+	.panel-title {
+		font-weight: 760;
+		letter-spacing: -0.02em;
 	}
 
 	.hint {
@@ -692,12 +434,6 @@
 		gap: 0.85rem;
 	}
 
-	.controls {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 0.6rem;
-	}
-
 	.field {
 		display: grid;
 		gap: 0.35rem;
@@ -708,9 +444,7 @@
 		font-size: 0.82rem;
 	}
 
-	input,
-	select,
-	textarea {
+	input {
 		width: 100%;
 		box-sizing: border-box;
 		padding: 0.65rem 0.75rem;
@@ -721,14 +455,7 @@
 		outline: none;
 	}
 
-	textarea {
-		resize: vertical;
-		min-height: 5.5rem;
-	}
-
-	input:focus,
-	select:focus,
-	textarea:focus {
+	input:focus {
 		border-color: color-mix(in oklab, var(--accent) 45%, transparent);
 		box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent) 16%, transparent);
 	}
@@ -778,63 +505,6 @@
 		background: color-mix(in oklab, var(--danger) 16%, transparent);
 	}
 
-	.status {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: 0.75rem;
-		padding: 0.75rem 0.8rem;
-		border-radius: 1rem;
-		border: 1px solid color-mix(in oklab, var(--ink) 10%, transparent);
-		background: color-mix(in oklab, white 88%, var(--paper));
-	}
-
-	.status-left {
-		display: grid;
-		gap: 0.35rem;
-	}
-
-	.status-pill {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.3rem 0.6rem;
-		border-radius: 999px;
-		background: color-mix(in oklab, var(--accent) 12%, transparent);
-		border: 1px solid color-mix(in oklab, var(--accent) 22%, transparent);
-		width: fit-content;
-	}
-
-	.dot {
-		width: 0.55rem;
-		height: 0.55rem;
-		border-radius: 999px;
-		background: var(--ok);
-		box-shadow: 0 0 0 6px color-mix(in oklab, var(--ok) 15%, transparent);
-	}
-
-	.status-meta {
-		color: var(--muted2);
-		font-size: 0.88rem;
-		display: flex;
-		gap: 1rem;
-		flex-wrap: wrap;
-	}
-
-	.ghost-btn {
-		border: 1px solid color-mix(in oklab, var(--ink) 14%, transparent);
-		background: transparent;
-		color: var(--ink);
-		padding: 0.55rem 0.75rem;
-		border-radius: 999px;
-		cursor: pointer;
-	}
-
-	.ghost-btn:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
 	.block {
 		border-radius: 1.25rem;
 		border: 1px solid color-mix(in oklab, var(--ink) 10%, transparent);
@@ -849,20 +519,6 @@
 		font-size: 0.85rem;
 		letter-spacing: 0.02em;
 		text-transform: uppercase;
-	}
-
-	.events {
-		margin: 0;
-		padding: 0.75rem;
-		border-radius: 1rem;
-		border: 1px solid color-mix(in oklab, var(--ink) 10%, transparent);
-		background: color-mix(in oklab, white 92%, var(--paper));
-		color: color-mix(in oklab, var(--ink) 88%, transparent);
-		max-height: 12rem;
-		overflow: auto;
-		font-size: 0.83rem;
-		line-height: 1.35;
-		white-space: pre-wrap;
 	}
 
 	.cards {
@@ -936,14 +592,12 @@
 		.hero {
 			padding: 0.5rem 0.25rem 0;
 		}
-		.logo-strip {
-			justify-content: center;
-		}
-		.controls {
-			grid-template-columns: 1fr;
-		}
 		.cards {
 			grid-template-columns: 1fr;
 		}
+		.logo-strip {
+			justify-content: center;
+		}
 	}
 </style>
+

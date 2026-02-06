@@ -9,10 +9,10 @@
 <svelte:head>
 	<link rel="icon" href={favicon} type="image/svg+xml" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<title>Influencer Scout</title>
+	<title>Instant Coffee</title>
 	<meta
 		name="description"
-		content="Find high-fit influencers fast. Weaviate-powered discovery + automated enrichment and ranking."
+		content="Instant, rustic influencer discovery. Weaviate-powered search with fast results."
 	/>
 </svelte:head>
 
