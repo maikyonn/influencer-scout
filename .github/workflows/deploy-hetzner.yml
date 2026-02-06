@@ -41,6 +41,48 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
             ${{ env.IMAGE_NAME }}:latest
 
+      # If the package is private, the Hetzner host will not be able to pull it without credentials.
+      # We force it to public since this repo is public and the image contains no secrets.
+      - name: Ensure GHCR package is public
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          curl -fsSL \
+            -X PATCH \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            https://api.github.com/user/packages/container/influencer-scout-api/visibility \
+            -d '{"visibility":"public"}' \
+            || true
+
+      - name: Prepare server dirs
+        if: ${{ secrets.HETZNER_HOST != '' && secrets.HETZNER_SSH_KEY != '' }}
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER || 'ubuntu' }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          port: ${{ secrets.HETZNER_SSH_PORT || 22 }}
+          script: |
+            set -euo pipefail
+            sudo -n mkdir -p /opt/influencer-scout/compose/sql
+            sudo -n chown -R $USER:$USER /opt/influencer-scout
+
+      - name: Upload compose + init.sql
+        if: ${{ secrets.HETZNER_HOST != '' && secrets.HETZNER_SSH_KEY != '' }}
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER || 'ubuntu' }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          port: ${{ secrets.HETZNER_SSH_PORT || 22 }}
+          source: |
+            infra/hetzner/compose/docker-compose.ghcr.yml
+            infra/hetzner/compose/sql/init.sql
+          target: /opt/influencer-scout/compose
+          strip_components: 3
+
       - name: Deploy to Hetzner (docker compose pull/up)
         if: ${{ secrets.HETZNER_HOST != '' && secrets.HETZNER_SSH_KEY != '' }}
         uses: appleboy/ssh-action@v1.2.0
@@ -53,7 +95,7 @@ jobs:
             set -euo pipefail
             cd /opt/influencer-scout/compose
             export IMAGE_TAG='${{ env.IMAGE_TAG }}'
+            test -f influencer-scout.env || (echo "Missing /opt/influencer-scout/compose/influencer-scout.env" && exit 1)
             docker compose -f docker-compose.ghcr.yml pull
             docker compose -f docker-compose.ghcr.yml up -d
             docker image prune -f || true
-
