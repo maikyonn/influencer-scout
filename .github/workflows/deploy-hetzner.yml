@@ -18,6 +18,11 @@ jobs:
     env:
       IMAGE_TAG: ${{ inputs.image_tag || github.sha }}
       IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/influencer-scout-api
+      # Work around GitHub Actions expression limitations: `secrets` context is not available in `if:`.
+      HETZNER_HOST: ${{ secrets.HETZNER_HOST }}
+      HETZNER_USER: ${{ secrets.HETZNER_USER }}
+      HETZNER_SSH_KEY: ${{ secrets.HETZNER_SSH_KEY }}
+      HETZNER_SSH_PORT: ${{ secrets.HETZNER_SSH_PORT }}
     steps:
       - uses: actions/checkout@v4
 
@@ -57,26 +62,26 @@ jobs:
             || true
 
       - name: Prepare server dirs
-        if: ${{ secrets.HETZNER_HOST != '' && secrets.HETZNER_SSH_KEY != '' }}
+        if: ${{ env.HETZNER_HOST != '' && env.HETZNER_SSH_KEY != '' }}
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.HETZNER_HOST }}
-          username: ${{ secrets.HETZNER_USER || 'ubuntu' }}
-          key: ${{ secrets.HETZNER_SSH_KEY }}
-          port: ${{ secrets.HETZNER_SSH_PORT || 22 }}
+          host: ${{ env.HETZNER_HOST }}
+          username: ${{ env.HETZNER_USER || 'ubuntu' }}
+          key: ${{ env.HETZNER_SSH_KEY }}
+          port: ${{ env.HETZNER_SSH_PORT || 22 }}
           script: |
             set -euo pipefail
             sudo -n mkdir -p /opt/influencer-scout/compose/sql
             sudo -n chown -R $USER:$USER /opt/influencer-scout
 
       - name: Upload compose + init.sql
-        if: ${{ secrets.HETZNER_HOST != '' && secrets.HETZNER_SSH_KEY != '' }}
+        if: ${{ env.HETZNER_HOST != '' && env.HETZNER_SSH_KEY != '' }}
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.HETZNER_HOST }}
-          username: ${{ secrets.HETZNER_USER || 'ubuntu' }}
-          key: ${{ secrets.HETZNER_SSH_KEY }}
-          port: ${{ secrets.HETZNER_SSH_PORT || 22 }}
+          host: ${{ env.HETZNER_HOST }}
+          username: ${{ env.HETZNER_USER || 'ubuntu' }}
+          key: ${{ env.HETZNER_SSH_KEY }}
+          port: ${{ env.HETZNER_SSH_PORT || 22 }}
           source: |
             infra/hetzner/compose/docker-compose.ghcr.yml
             infra/hetzner/compose/sql/init.sql
@@ -84,13 +89,13 @@ jobs:
           strip_components: 3
 
       - name: Deploy to Hetzner (docker compose pull/up)
-        if: ${{ secrets.HETZNER_HOST != '' && secrets.HETZNER_SSH_KEY != '' }}
+        if: ${{ env.HETZNER_HOST != '' && env.HETZNER_SSH_KEY != '' }}
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.HETZNER_HOST }}
-          username: ${{ secrets.HETZNER_USER || 'ubuntu' }}
-          key: ${{ secrets.HETZNER_SSH_KEY }}
-          port: ${{ secrets.HETZNER_SSH_PORT || 22 }}
+          host: ${{ env.HETZNER_HOST }}
+          username: ${{ env.HETZNER_USER || 'ubuntu' }}
+          key: ${{ env.HETZNER_SSH_KEY }}
+          port: ${{ env.HETZNER_SSH_PORT || 22 }}
           script: |
             set -euo pipefail
             cd /opt/influencer-scout/compose
