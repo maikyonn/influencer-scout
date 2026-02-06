@@ -10,6 +10,7 @@ function loadOpenApiYaml(): string {
     process.env.OPENAPI_PATH,
     '/app/openapi.yaml',
     path.resolve(process.cwd(), 'openapi.yaml'),
+    path.resolve(process.cwd(), 'apps/influencer-scout-api/openapi.yaml'),
     path.resolve(process.cwd(), 'services/influencer-scout-api/openapi.yaml'),
   ].filter(Boolean) as string[];
 
@@ -137,4 +138,3 @@ export async function handleOpenApiYaml(_req: any, res: any) {
   const yaml = loadOpenApiYaml();
   res.status(200).type('text/yaml').send(yaml);
 }
-

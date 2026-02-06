@@ -11,21 +11,31 @@ import { createLogger } from './logger.js';
 const logger = createLogger({ component: 'llm-analysis' });
 
 /**
- * Get OpenAI API key from environment variables
+ * Get LLM API key from environment variables.
+ * We support OpenAI directly, or DeepInfra via its OpenAI-compatible endpoint.
  */
-function getOpenAIApiKey(): string {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY environment variable is required');
-  }
-  return apiKey.trim();
+function getLLMApiKey(): string {
+  const apiKey = (process.env.OPENAI_API_KEY || process.env.DEEPINFRA_API_KEY || '').trim();
+  if (!apiKey) throw new Error('Missing LLM API key. Set OPENAI_API_KEY or DEEPINFRA_API_KEY.');
+  return apiKey;
+}
+
+function getLLMBaseURL(): string | undefined {
+  const explicit = (process.env.OPENAI_BASE_URL || process.env.LLM_BASE_URL || '').trim();
+  if (explicit) return explicit;
+  if (!process.env.OPENAI_API_KEY && process.env.DEEPINFRA_API_KEY) return 'https://api.deepinfra.com/v1/openai';
+  return undefined;
 }
 
 /**
- * Get OpenAI model (default: gpt-5-nano)
+ * Get model name.
  */
 function getOpenAIModel(): string {
-  return process.env.OPENAI_MODEL || 'gpt-5-nano';
+  const configured = (process.env.LLM_MODEL || process.env.OPENAI_MODEL || '').trim();
+  if (configured) return configured;
+  const baseURL = getLLMBaseURL() || '';
+  if (baseURL.includes('deepinfra.com')) return 'meta-llama/Meta-Llama-3.1-8B-Instruct';
+  return 'gpt-5-nano';
 }
 
 /**
@@ -43,7 +53,7 @@ let cachedClient: OpenAI | null = null;
  */
 function getOpenAIClient(): OpenAI {
   if (!cachedClient) {
-    cachedClient = new OpenAI({ apiKey: getOpenAIApiKey() });
+    cachedClient = new OpenAI({ apiKey: getLLMApiKey(), baseURL: getLLMBaseURL() });
   }
   return cachedClient;
 }
@@ -286,63 +296,16 @@ export async function analyzeProfileFit(
   const client = getOpenAIClient();
 
   try {
-    const response = await client.responses.create({
-      model: model,
-      input: [
-        {
-          type: 'message',
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      text: {
-        format: {
-          type: 'text',
-        },
-        verbosity: 'medium',
-      },
-      reasoning: {
-        effort: 'medium',
-      },
-      tools: [],
-      store: true,
-      include: [
-        'reasoning.encrypted_content',
-        'web_search_call.action.sources',
-      ] as any,
+    // Use Chat Completions for maximum provider compatibility (DeepInfra supports this).
+    // We instruct the model to output STRICT JSON only.
+    const completion = await client.chat.completions.create({
+      model,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.2,
     });
 
-    // Extract text content from Responses API format
-    let content = '';
-    
-    // Try output_text property first (most direct)
-    if ((response as any).output_text) {
-      content = (response as any).output_text;
-    }
-    // Try output array structure
-    else if (response.output && Array.isArray(response.output)) {
-      for (const outputItem of response.output) {
-        if (outputItem.type === 'message' && outputItem.content) {
-          if (Array.isArray(outputItem.content)) {
-            for (const contentItem of outputItem.content) {
-              // Check if it's ResponseOutputText type
-              if (contentItem.type === 'output_text' && 'text' in contentItem) {
-                content = (contentItem as any).text;
-                break;
-              }
-            }
-          } else if (typeof outputItem.content === 'string') {
-            content = outputItem.content;
-          }
-        }
-        if (content) break;
-      }
-    }
-
-    if (!content) {
-      logger.error('llm_response_invalid_structure', { response });
-      throw new Error('No text content in OpenAI response. Check response structure above.');
-    }
+    const content = completion.choices?.[0]?.message?.content || '';
+    if (!content) throw new Error('No text content in LLM response');
 
     // Parse JSON from content
     const parsed = JSON.parse(content);

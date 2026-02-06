@@ -31,6 +31,16 @@ import { buildRequestContext, createLogger } from './utils/logger.js';
 
 export type StartupHealthCheck = { summary: any; timestamp: Date } | null;
 
+function wrapAsync<
+  Req extends express.Request = express.Request,
+  Res extends express.Response = express.Response,
+  Next extends express.NextFunction = express.NextFunction,
+>(fn: (req: Req, res: Res, next: Next) => any) {
+  return (req: Req, res: Res, next: Next) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+}
+
 export function createApp(options?: {
   getStartupHealthCheck?: () => StartupHealthCheck;
   registerRoutes?: (app: express.Express) => void;
@@ -101,43 +111,43 @@ export function createApp(options?: {
   });
 
   // Public landing/docs (no auth)
-  app.get('/', handlePublicDocs);
-  app.get('/openapi.yaml', handleOpenApiYaml);
+  app.get('/', wrapAsync(handlePublicDocs as any));
+  app.get('/openapi.yaml', wrapAsync(handleOpenApiYaml as any));
 
   // Public API (API-keyed)
-  app.post('/pipeline/start', requireApiKey, rateLimit({ scope: 'pipeline_start' }), handlePipelineStart);
-  app.get('/pipeline/jobs/:jobId', requireApiKey, rateLimit({ scope: 'pipeline_job' }), handleGetJob);
-  app.get('/pipeline/jobs/:jobId/results', requireApiKey, rateLimit({ scope: 'pipeline_results' }), handleGetResults);
-  app.get('/pipeline/jobs/:jobId/artifacts/:kind', requireApiKey, rateLimit({ scope: 'pipeline_artifact' }), handleGetArtifact);
-  app.get('/pipeline/jobs/:jobId/events', requireApiKey, rateLimit({ scope: 'pipeline_events' }), handleEvents);
-  app.post('/pipeline/jobs/:jobId/cancel', requireApiKey, rateLimit({ scope: 'pipeline_cancel' }), handleCancel);
+  app.post('/pipeline/start', requireApiKey, rateLimit({ scope: 'pipeline_start' }), wrapAsync(handlePipelineStart as any));
+  app.get('/pipeline/jobs/:jobId', requireApiKey, rateLimit({ scope: 'pipeline_job' }), wrapAsync(handleGetJob as any));
+  app.get('/pipeline/jobs/:jobId/results', requireApiKey, rateLimit({ scope: 'pipeline_results' }), wrapAsync(handleGetResults as any));
+  app.get('/pipeline/jobs/:jobId/artifacts/:kind', requireApiKey, rateLimit({ scope: 'pipeline_artifact' }), wrapAsync(handleGetArtifact as any));
+  app.get('/pipeline/jobs/:jobId/events', requireApiKey, rateLimit({ scope: 'pipeline_events' }), wrapAsync(handleEvents as any));
+  app.post('/pipeline/jobs/:jobId/cancel', requireApiKey, rateLimit({ scope: 'pipeline_cancel' }), wrapAsync(handleCancel as any));
 
-  app.post('/weaviate/search', requireApiKey, rateLimit({ scope: 'weaviate_search' }), handleWeaviateSearch);
+  app.post('/weaviate/search', requireApiKey, rateLimit({ scope: 'weaviate_search' }), wrapAsync(handleWeaviateSearch as any));
 
   // Admin UI + APIs (admin-keyed or session cookie)
-  app.post('/admin/login', handleAdminLogin);
-  app.get('/admin', handleAdminPage);
-  app.get('/admin/jobs', handleAdminPage);
-  app.get('/admin/jobs/:jobId', handleAdminPage);
-  app.get('/admin/usage', handleAdminPage);
-  app.get('/admin/keys', handleAdminPage);
+  app.post('/admin/login', wrapAsync(handleAdminLogin as any));
+  app.get('/admin', wrapAsync(handleAdminPage as any));
+  app.get('/admin/jobs', wrapAsync(handleAdminPage as any));
+  app.get('/admin/jobs/:jobId', wrapAsync(handleAdminPage as any));
+  app.get('/admin/usage', wrapAsync(handleAdminPage as any));
+  app.get('/admin/keys', wrapAsync(handleAdminPage as any));
 
-  app.get('/admin/api/overview', requireAdminKey, handleAdminOverview);
-  app.get('/admin/api/jobs', requireAdminKey, handleAdminJobs);
-  app.get('/admin/api/jobs/:jobId', requireAdminKey, handleAdminJob);
-  app.get('/admin/api/jobs/:jobId/events', requireAdminKey, handleAdminJobEvents);
-  app.get('/admin/api/jobs/:jobId/events/stream', requireAdminKey, handleAdminJobEventsStream);
-  app.get('/admin/api/jobs/:jobId/external-calls', requireAdminKey, handleAdminJobExternalCalls);
-  app.get('/admin/api/jobs/:jobId/artifacts', requireAdminKey, handleAdminJobArtifacts);
-  app.get('/admin/api/jobs/:jobId/artifacts/:kind', requireAdminKey, handleAdminJobArtifact);
-  app.post('/admin/api/jobs/:jobId/cancel', requireAdminKey, handleAdminCancelJob);
-  app.get('/admin/api/usage', requireAdminKey, handleAdminUsage);
-  app.get('/admin/api/queue', requireAdminKey, handleAdminQueue);
-  app.get('/admin/api/keys', requireAdminKey, handleAdminKeys);
-  app.post('/admin/api/keys', requireAdminKey, handleAdminCreateKey);
-  app.post('/admin/api/keys/:id/revoke', requireAdminKey, handleAdminRevokeKey);
-  app.post('/admin/api/weaviate/search', requireAdminKey, handleAdminWeaviateSearch);
-  app.post('/admin/api/pipeline/start', requireAdminKey, handleAdminPipelineStart);
+  app.get('/admin/api/overview', requireAdminKey, wrapAsync(handleAdminOverview as any));
+  app.get('/admin/api/jobs', requireAdminKey, wrapAsync(handleAdminJobs as any));
+  app.get('/admin/api/jobs/:jobId', requireAdminKey, wrapAsync(handleAdminJob as any));
+  app.get('/admin/api/jobs/:jobId/events', requireAdminKey, wrapAsync(handleAdminJobEvents as any));
+  app.get('/admin/api/jobs/:jobId/events/stream', requireAdminKey, wrapAsync(handleAdminJobEventsStream as any));
+  app.get('/admin/api/jobs/:jobId/external-calls', requireAdminKey, wrapAsync(handleAdminJobExternalCalls as any));
+  app.get('/admin/api/jobs/:jobId/artifacts', requireAdminKey, wrapAsync(handleAdminJobArtifacts as any));
+  app.get('/admin/api/jobs/:jobId/artifacts/:kind', requireAdminKey, wrapAsync(handleAdminJobArtifact as any));
+  app.post('/admin/api/jobs/:jobId/cancel', requireAdminKey, wrapAsync(handleAdminCancelJob as any));
+  app.get('/admin/api/usage', requireAdminKey, wrapAsync(handleAdminUsage as any));
+  app.get('/admin/api/queue', requireAdminKey, wrapAsync(handleAdminQueue as any));
+  app.get('/admin/api/keys', requireAdminKey, wrapAsync(handleAdminKeys as any));
+  app.post('/admin/api/keys', requireAdminKey, wrapAsync(handleAdminCreateKey as any));
+  app.post('/admin/api/keys/:id/revoke', requireAdminKey, wrapAsync(handleAdminRevokeKey as any));
+  app.post('/admin/api/weaviate/search', requireAdminKey, wrapAsync(handleAdminWeaviateSearch as any));
+  app.post('/admin/api/pipeline/start', requireAdminKey, wrapAsync(handleAdminPipelineStart as any));
 
   if (registerRoutes) registerRoutes(app);
 
@@ -145,9 +155,8 @@ export function createApp(options?: {
   app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
     const logger = (req as any).logger?.child({ component: 'app', action: 'error_middleware' }) ?? appLogger;
     logger.error('unhandled_error', { error: err });
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'INTERNAL_ERROR', message: 'An unexpected error occurred' });
-    }
+    const requestId = (req as any).requestId;
+    if (!res.headersSent) res.status(500).json({ error: 'INTERNAL_ERROR', message: 'An unexpected error occurred', request_id: requestId });
   });
 
   return app;

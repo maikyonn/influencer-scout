@@ -179,7 +179,13 @@ export async function generateQueryEmbedding(query: string): Promise<number[]> {
 export async function generateQueryEmbeddingsBatch(queries: string[]): Promise<Map<string, number[]>> {
   if (queries.length === 0) return new Map();
 
-  const provider = (process.env.EMBEDDINGS_PROVIDER || 'deepinfra').toLowerCase();
+  let provider = (process.env.EMBEDDINGS_PROVIDER || 'deepinfra').toLowerCase();
+  if (provider === 'openai' && !process.env.OPENAI_API_KEY) {
+    // Misconfiguration safety: prefer DeepInfra when OpenAI key isn't present.
+    // This prevents /weaviate/search from crashing the process due to an uncaught rejection.
+    provider = 'deepinfra';
+    logger.warn('embeddings_provider_openai_without_key_falling_back_deepinfra');
+  }
   if (provider === 'openai') {
     return generateOpenAIEmbeddingsBatch(queries);
   }

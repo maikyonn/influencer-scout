@@ -22,7 +22,15 @@ async function checkEnv(): Promise<HealthCheckResult> {
   if (!process.env.DATABASE_URL) missing.push('DATABASE_URL');
   if (!process.env.REDIS_URL) missing.push('REDIS_URL');
   if (!process.env.WEAVIATE_URL) missing.push('WEAVIATE_URL');
-  if (!process.env.OPENAI_API_KEY) missing.push('OPENAI_API_KEY');
+  // LLM + embeddings: we support OpenAI directly, or DeepInfra via its OpenAI-compatible endpoint.
+  const hasLlmKey = !!(process.env.OPENAI_API_KEY || process.env.DEEPINFRA_API_KEY);
+  if (!hasLlmKey) missing.push('OPENAI_API_KEY|DEEPINFRA_API_KEY');
+  const embeddingsProvider = (process.env.EMBEDDINGS_PROVIDER || 'deepinfra').toLowerCase();
+  if (embeddingsProvider === 'openai') {
+    if (!process.env.OPENAI_API_KEY) missing.push('OPENAI_API_KEY (for EMBEDDINGS_PROVIDER=openai)');
+  } else {
+    if (!process.env.DEEPINFRA_API_KEY) missing.push('DEEPINFRA_API_KEY (for embeddings)');
+  }
   if (!process.env.BRIGHTDATA_API_KEY) missing.push('BRIGHTDATA_API_KEY');
   if (!process.env.API_KEY_PEPPER) missing.push('API_KEY_PEPPER');
   if (!process.env.INFLUENCER_SCOUT_ADMIN_KEY_HASH && !process.env.INFLUENCER_SCOUT_ADMIN_KEY) missing.push('INFLUENCER_SCOUT_ADMIN_KEY_HASH');

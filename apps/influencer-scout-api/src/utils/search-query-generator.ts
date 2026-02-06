@@ -5,26 +5,31 @@ import { createLogger } from './logger.js';
 let cachedClient: OpenAI | null = null;
 const logger = createLogger({ component: 'query-generation' });
 
-function getOpenAIApiKey(): string {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY environment variable is required');
-  }
-  const trimmedKey = apiKey.trim();
-  logger.debug('openai_api_key_loaded', { key_length: trimmedKey.length });
-  if (!trimmedKey.startsWith('sk-')) {
-    throw new Error('Invalid OpenAI API key format. API keys should start with "sk-"');
-  }
-  return trimmedKey;
+function getLLMApiKey(): string {
+  const apiKey = (process.env.OPENAI_API_KEY || process.env.DEEPINFRA_API_KEY || '').trim();
+  if (!apiKey) throw new Error('Missing LLM API key. Set OPENAI_API_KEY or DEEPINFRA_API_KEY.');
+  return apiKey;
+}
+
+function getLLMBaseURL(): string | undefined {
+  const explicit = (process.env.OPENAI_BASE_URL || process.env.LLM_BASE_URL || '').trim();
+  if (explicit) return explicit;
+  // If using DeepInfra (no OpenAI key), default to DeepInfra's OpenAI-compatible endpoint.
+  if (!process.env.OPENAI_API_KEY && process.env.DEEPINFRA_API_KEY) return 'https://api.deepinfra.com/v1/openai';
+  return undefined;
 }
 
 function getOpenAIModel(): string {
-  return process.env.OPENAI_MODEL || 'gpt-4o-mini';
+  const configured = (process.env.LLM_MODEL || process.env.OPENAI_MODEL || '').trim();
+  if (configured) return configured;
+  const baseURL = getLLMBaseURL() || '';
+  if (baseURL.includes('deepinfra.com')) return 'meta-llama/Meta-Llama-3.1-8B-Instruct';
+  return 'gpt-4o-mini';
 }
 
 function getOpenAIClient(): OpenAI {
   if (!cachedClient) {
-    cachedClient = new OpenAI({ apiKey: getOpenAIApiKey() });
+    cachedClient = new OpenAI({ apiKey: getLLMApiKey(), baseURL: getLLMBaseURL() });
   }
   return cachedClient;
 }
