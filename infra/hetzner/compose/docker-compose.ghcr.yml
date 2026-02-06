@@ -1,0 +1,63 @@
+services:
+  weaviate:
+    image: cr.weaviate.io/semitechnologies/weaviate:1.35.6
+    restart: unless-stopped
+    environment:
+      QUERY_DEFAULTS_LIMIT: "25"
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: "/var/lib/weaviate"
+      DEFAULT_VECTORIZER_MODULE: "none"
+      ENABLE_MODULES: ""
+      CLUSTER_HOSTNAME: "node1"
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+    ports:
+      - "127.0.0.1:8082:8080"
+
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    env_file:
+      - ./influencer-scout.env
+    environment:
+      POSTGRES_DB: influencer_scout
+      POSTGRES_USER: influencer
+    volumes:
+      - influencer_scout_pg:/var/lib/postgresql/data
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "127.0.0.1:5433:5432"
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6380:6379"
+
+  influencer-scout-api:
+    image: ghcr.io/maikyonn/influencer-scout-api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file:
+      - ./influencer-scout.env
+    ports:
+      - "127.0.0.1:8091:8080"
+    depends_on:
+      - weaviate
+      - postgres
+      - redis
+
+  influencer-scout-worker:
+    image: ghcr.io/maikyonn/influencer-scout-api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    command: ["node", "dist/worker-main.js"]
+    env_file:
+      - ./influencer-scout.env
+    depends_on:
+      - weaviate
+      - postgres
+      - redis
+
+volumes:
+  weaviate_data:
+  influencer_scout_pg:
+
