@@ -7,8 +7,6 @@ const schema = z.object({
   query: z.string().min(1),
   top_k: z.number().int().min(1).max(10).optional().default(10),
   platform: z.enum(['instagram', 'tiktok']).optional(),
-  min_followers: z.number().int().min(0).optional().nullable(),
-  max_followers: z.number().int().min(0).optional().nullable(),
 });
 
 export const POST: RequestHandler = async ({ request, fetch }) => {
@@ -27,22 +25,16 @@ export const POST: RequestHandler = async ({ request, fetch }) => {
     );
   }
 
-  if (
-    parsed.data.min_followers != null &&
-    parsed.data.max_followers != null &&
-    parsed.data.min_followers > parsed.data.max_followers
-  ) {
-    return json({ error: 'INVALID_FOLLOWER_BOUNDS' }, { status: 400 });
-  }
+  // Force 10 regardless of client input.
+  const upstreamBody = { ...parsed.data, top_k: 10 };
 
   try {
     const upstream = await callInfluencerScout<any>(fetch, '/weaviate/search', {
       method: 'POST',
-      json: parsed.data,
+      json: upstreamBody,
     });
     return json(upstream.data, { status: upstream.status });
   } catch {
     return json({ error: 'UPSTREAM_UNAVAILABLE' }, { status: 502 });
   }
 };
-

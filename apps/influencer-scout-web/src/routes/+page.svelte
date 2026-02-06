@@ -3,7 +3,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import Waterfall from '$lib/components/Waterfall.svelte';
 	import InfluencerCard from '$lib/components/InfluencerCard.svelte';
-	import { clampInt, fmtInt } from '$lib/utils/format';
+	import { fmtInt } from '$lib/utils/format';
 	import type {
 		PipelineEventsResponse,
 		PipelineFinalArtifact,
@@ -19,12 +19,9 @@
 
 	// Shared controls
 	let platform: Platform | '' = $state('');
-	let minFollowersText = $state('');
-	let maxFollowersText = $state('');
 
 	// Pipeline inputs/state
 	let businessDescription = $state('');
-	let topN = $state(10);
 	let pipelineBusy = $state(false);
 	let pipelineError = $state<string | null>(null);
 
@@ -41,13 +38,6 @@
 	let weaviateBusy = $state(false);
 	let weaviateError = $state<string | null>(null);
 	let weaviateRes: WeaviateSearchResponse | null = $state(null);
-
-	function parseOptionalInt(s: string): number | null {
-		const t = s.trim();
-		if (!t) return null;
-		const n = Number(t);
-		return Number.isFinite(n) ? clampInt(n, 0, Number.MAX_SAFE_INTEGER) : null;
-	}
 
 	async function apiJson<T>(path: string, init?: RequestInit & { json?: unknown }): Promise<{ status: number; data: T }> {
 		const res = await fetch(path, {
@@ -120,9 +110,6 @@
 		lastEventId = 0;
 		job = null;
 
-		const min_followers = parseOptionalInt(minFollowersText);
-		const max_followers = parseOptionalInt(maxFollowersText);
-
 		if (!businessDescription.trim()) {
 			pipelineError = 'Tell us what you’re selling or promoting.';
 			return;
@@ -134,10 +121,8 @@
 				method: 'POST',
 				json: {
 					business_description: businessDescription.trim(),
-					top_n: clampInt(topN, 1, 10),
-					platform: platform || undefined,
-					min_followers,
-					max_followers
+					top_n: 10,
+					platform: platform || undefined
 				}
 			});
 
@@ -176,9 +161,6 @@
 			return;
 		}
 
-		const min_followers = parseOptionalInt(minFollowersText);
-		const max_followers = parseOptionalInt(maxFollowersText);
-
 		weaviateBusy = true;
 		try {
 			const { status, data } = await apiJson<any>('/api/weaviate/search', {
@@ -186,9 +168,7 @@
 				json: {
 					query: q,
 					top_k: 10,
-					platform: platform || undefined,
-					min_followers,
-					max_followers
+					platform: platform || undefined
 				}
 			});
 			if (status !== 200) {
@@ -315,14 +295,6 @@
 							<option value="tiktok">TikTok</option>
 						</select>
 					</div>
-					<div class="field">
-						<label for="min_followers">Min followers</label>
-						<input id="min_followers" inputmode="numeric" placeholder="e.g. 5000" bind:value={minFollowersText} />
-					</div>
-					<div class="field">
-						<label for="max_followers">Max followers</label>
-						<input id="max_followers" inputmode="numeric" placeholder="e.g. 250000" bind:value={maxFollowersText} />
-					</div>
 				</div>
 
 				{#if mode === 'pipeline'}
@@ -337,23 +309,7 @@
 					</div>
 
 					<div class="row">
-						<div class="field grow">
-							<label for="top_n">Results (max 10)</label>
-							<input
-								id="top_n"
-								type="range"
-								min="1"
-								max="10"
-								step="1"
-								bind:value={topN}
-								aria-label="top_n"
-							/>
-							<div class="range-meta">
-								<span>1</span>
-								<span class="mono">{topN}</span>
-								<span>10</span>
-							</div>
-						</div>
+						<div class="note">Returns up to 10 influencers.</div>
 						<button class="run" disabled={pipelineBusy} onclick={startPipeline}>
 							{pipelineBusy ? 'Starting…' : 'Scout'}
 						</button>
@@ -761,19 +717,6 @@
 		display: flex;
 		align-items: end;
 		gap: 0.8rem;
-	}
-
-	.grow {
-		flex: 1;
-	}
-
-	.range-meta {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-top: 0.2rem;
-		color: var(--muted2);
-		font-size: 0.8rem;
 	}
 
 	.note {

@@ -4,8 +4,6 @@ export type PipelineStartRequest = {
   business_description: string;
   top_n?: number;
   platform?: Platform;
-  min_followers?: number | null;
-  max_followers?: number | null;
 };
 
 export type PipelineStartResponse = {
@@ -77,8 +75,6 @@ export type WeaviateSearchRequest = {
   query: string;
   top_k?: number;
   platform?: Platform;
-  min_followers?: number | null;
-  max_followers?: number | null;
 };
 
 export type WeaviateCandidate = {
@@ -97,4 +93,3 @@ export type WeaviateSearchResponse = {
   candidates: WeaviateCandidate[];
   meta?: Record<string, unknown>;
 };
-
