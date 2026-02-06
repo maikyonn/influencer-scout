@@ -220,23 +220,6 @@
 			<div class="logo">IS</div>
 			<div class="title">Influencer Scout</div>
 		</div>
-		<nav class="links">
-			<a class="link" href="https://api.penni-ai.com/openapi.yaml" target="_blank" rel="noreferrer">API</a>
-			<a
-				class="link"
-				href="https://github.com/maikyonn/influencer-scout/tree/main/apps/mcp-server"
-				target="_blank"
-				rel="noreferrer"
-				>MCP</a
-			>
-			<a
-				class="link"
-				href="https://github.com/maikyonn/influencer-scout/blob/main/skills/clawdbot-influencer-scout/SKILL.md"
-				target="_blank"
-				rel="noreferrer"
-				>Clawdbot</a
-			>
-		</nav>
 	</header>
 
 	<main class="grid">
@@ -263,15 +246,22 @@
 				</button>
 			</div>
 
-			<div class="mini" data-hero>
-				<div class="mini-card">
-					<div class="mini-title">Guardrails</div>
-					<div class="mini-body">We cap results to 10 to keep it snappy.</div>
-				</div>
-				<div class="mini-card">
-					<div class="mini-title">Developer hooks</div>
-					<div class="mini-body">MCP + Clawdbot links are one click away.</div>
-				</div>
+			<div class="dev-ctas" data-hero>
+				<a class="cta dark" href="https://api.penni-ai.com/openapi.yaml" target="_blank" rel="noreferrer">API</a>
+				<a
+					class="cta dark"
+					href="https://github.com/maikyonn/influencer-scout/tree/main/apps/mcp-server"
+					target="_blank"
+					rel="noreferrer"
+					>MCP</a
+				>
+				<a
+					class="cta dark"
+					href="https://github.com/maikyonn/influencer-scout/blob/main/skills/clawdbot-influencer-scout/SKILL.md"
+					target="_blank"
+					rel="noreferrer"
+					>Clawdbot</a
+				>
 			</div>
 		</section>
 
@@ -414,10 +404,28 @@
 	</main>
 
 	<footer class="foot">
-		<div class="foot-left">Influencer Scout</div>
-		<div class="foot-right">
-			<a href="https://api.penni-ai.com" target="_blank" rel="noreferrer">API Host</a>
-			<a href="https://github.com/maikyonn/influencer-scout" target="_blank" rel="noreferrer">GitHub</a>
+		<div class="logo-bar" aria-label="Customer logos (placeholders)">
+			<div class="logo-strip">
+				<span class="logo-mark">SUNO</span>
+				<span class="sep">|</span>
+				<span class="logo-mark">DR</span>
+				<span class="sep">|</span>
+				<span class="logo-mark">ElevenLabs</span>
+				<span class="sep">|</span>
+				<span class="logo-mark">ByteDance</span>
+				<span class="sep">|</span>
+				<span class="logo-mark">NORMAKAMALI</span>
+				<span class="sep">|</span>
+				<span class="logo-mark">CASETiFY</span>
+			</div>
+		</div>
+
+		<div class="foot-row">
+			<div class="foot-left">Influencer Scout</div>
+			<div class="foot-right">
+				<a href="https://api.penni-ai.com" target="_blank" rel="noreferrer">API Host</a>
+				<a href="https://github.com/maikyonn/influencer-scout" target="_blank" rel="noreferrer">GitHub</a>
+			</div>
 		</div>
 	</footer>
 </div>
@@ -509,28 +517,6 @@
 		letter-spacing: -0.02em;
 	}
 
-	.links {
-		display: flex;
-		gap: 0.6rem;
-		flex-wrap: wrap;
-		justify-content: flex-end;
-	}
-
-	.link {
-		padding: 0.45rem 0.7rem;
-		border-radius: 999px;
-		text-decoration: none;
-		font-size: 0.9rem;
-		background: color-mix(in oklab, white 76%, var(--paper));
-		border: 1px solid color-mix(in oklab, var(--ink) 10%, transparent);
-		transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
-	}
-
-	.link:hover {
-		transform: translateY(-1px);
-		border-color: color-mix(in oklab, var(--accent2) 45%, transparent);
-	}
-
 	.grid {
 		display: grid;
 		grid-template-columns: 1.05fr 1fr;
@@ -614,6 +600,9 @@
 		background: linear-gradient(90deg, color-mix(in oklab, var(--accent) 92%, #fff7ee), var(--accent2));
 		box-shadow: 0 18px 55px color-mix(in oklab, var(--accent2) 14%, transparent);
 		transition: transform 140ms ease;
+		text-decoration: none;
+		display: inline-flex;
+		align-items: center;
 	}
 
 	.cta:hover {
@@ -627,29 +616,16 @@
 		box-shadow: none;
 	}
 
-	.mini {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 0.75rem;
+	.cta.dark {
+		background: color-mix(in oklab, var(--accent2) 92%, black);
+		border: 1px solid color-mix(in oklab, #fff 10%, transparent);
+		box-shadow: 0 18px 55px color-mix(in oklab, var(--accent2) 10%, transparent);
 	}
 
-	.mini-card {
-		padding: 0.9rem;
-		border-radius: var(--radius-lg);
-		background: color-mix(in oklab, white 80%, var(--paper));
-		border: 1px solid color-mix(in oklab, var(--ink) 10%, transparent);
-	}
-
-	.mini-title {
-		font-weight: 700;
-		letter-spacing: -0.02em;
-		margin-bottom: 0.25rem;
-	}
-
-	.mini-body {
-		color: var(--muted);
-		font-size: 0.92rem;
-		line-height: 1.25;
+	.dev-ctas {
+		display: flex;
+		gap: 0.6rem;
+		flex-wrap: wrap;
 	}
 
 	.panel {
@@ -882,14 +858,49 @@
 	}
 
 	.foot {
-		display: flex;
-		justify-content: space-between;
-		gap: 1rem;
-		padding: 1.25rem 0.25rem 0.2rem;
+		display: grid;
+		gap: 0.85rem;
+		padding: 1.25rem 0 0.2rem;
 		color: var(--muted2);
 		font-size: 0.95rem;
 		position: relative;
 		z-index: 2;
+	}
+
+	.logo-bar {
+		border-radius: 1.1rem;
+		background: color-mix(in oklab, var(--accent2) 92%, black);
+		border: 1px solid color-mix(in oklab, #fff 10%, transparent);
+		box-shadow: 0 28px 90px color-mix(in oklab, var(--accent2) 12%, transparent);
+		padding: 0.9rem 1rem;
+		overflow: hidden;
+	}
+
+	.logo-strip {
+		display: flex;
+		gap: 1.2rem;
+		align-items: center;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		color: #f7eee2;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+
+	.logo-mark {
+		font-weight: 800;
+		font-size: 0.95rem;
+	}
+
+	.sep {
+		opacity: 0.35;
+	}
+
+	.foot-row {
+		display: flex;
+		justify-content: space-between;
+		gap: 1rem;
+		padding: 0 0.25rem;
 	}
 
 	.foot-right {
@@ -911,8 +922,8 @@
 		.hero {
 			padding: 0.5rem 0.25rem 0;
 		}
-		.mini {
-			grid-template-columns: 1fr;
+		.logo-strip {
+			justify-content: center;
 		}
 		.controls {
 			grid-template-columns: 1fr;
