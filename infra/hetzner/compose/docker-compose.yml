@@ -1,0 +1,81 @@
+services:
+  weaviate:
+    image: cr.weaviate.io/semitechnologies/weaviate:1.35.6
+    restart: unless-stopped
+    environment:
+      QUERY_DEFAULTS_LIMIT: "25"
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: "/var/lib/weaviate"
+      DEFAULT_VECTORIZER_MODULE: "none"
+      ENABLE_MODULES: ""
+      CLUSTER_HOSTNAME: "node1"
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+    ports:
+      - "127.0.0.1:8082:8080"
+
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: influencer_scout
+      POSTGRES_USER: influencer
+      POSTGRES_PASSWORD: influencer
+    volumes:
+      - influencer_scout_pg:/var/lib/postgresql/data
+      - /opt/penny/services/services/influencer-scout-api/sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "127.0.0.1:5433:5432"
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6380:6379"
+
+  influencer-scout-api:
+    build:
+      context: /opt/penny/services/services/influencer-scout-api
+      dockerfile: Dockerfile
+    env_file:
+      - ./pipeline.env
+      - ./influencer-scout.env
+    ports:
+      - "127.0.0.1:8091:8080"
+    depends_on:
+      - weaviate
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  influencer-scout-worker:
+    build:
+      context: /opt/penny/services/services/influencer-scout-api
+      dockerfile: Dockerfile
+    command: ["node", "dist/worker-main.js"]
+    env_file:
+      - ./pipeline.env
+      - ./influencer-scout.env
+    depends_on:
+      - weaviate
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  pipeline-api:
+    build:
+      context: /opt/penny/services/services/pipeline-service
+      dockerfile: Dockerfile
+    env_file:
+      - ./pipeline.env
+    volumes:
+      - /opt/penny/secrets/gcp-sa.json:/var/secrets/gcp-sa.json:ro
+    ports:
+      - "127.0.0.1:8081:8080"
+    depends_on:
+      - weaviate
+    restart: unless-stopped
+
+volumes:
+  weaviate_data:
+  influencer_scout_pg:

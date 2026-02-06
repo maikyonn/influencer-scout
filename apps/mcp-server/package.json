@@ -1,0 +1,14 @@
+{
+  "name": "@influencer-scout/mcp-server",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build": "echo 'no build step (bun runs TS directly)'",
+    "test": "echo 'no tests yet'"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  }
+}

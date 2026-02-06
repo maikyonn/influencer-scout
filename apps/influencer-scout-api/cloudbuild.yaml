@@ -1,0 +1,47 @@
+steps:
+  # Step 1: Build Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/pipeline-service-images/pipeline-service:$BUILD_ID'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/pipeline-service-images/pipeline-service:latest'
+      - '.'
+
+  # Step 2: Push Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '--all-tags'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/pipeline-service-images/pipeline-service'
+
+  # Step 3: Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        PROJECT_NUMBER="$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')"
+        SERVICE_URL="https://pipeline-service-${PROJECT_NUMBER}.us-central1.run.app"
+        gcloud run deploy pipeline-service \
+          --region=us-central1 \
+          --image=us-central1-docker.pkg.dev/$PROJECT_ID/pipeline-service-images/pipeline-service:$BUILD_ID \
+          --platform=managed \
+          --no-allow-unauthenticated \
+          --service-account=pipeline-service@$PROJECT_ID.iam.gserviceaccount.com \
+          --memory=2Gi \
+          --cpu=2 \
+          --timeout=3600s \
+          --max-instances=50 \
+          --min-instances=0 \
+          --concurrency=1 \
+          --set-secrets=OPENAI_API_KEY=openai-api-key:latest,WEAVIATE_API_KEY=weaviate-api-key:latest,WEAVIATE_URL=weaviate-url:latest,DEEPINFRA_API_KEY=deepinfra-api-key:latest,BRIGHTDATA_API_KEY=brightdata-api-key:latest,GMAIL_OAUTH_CLIENT_SECRET=GMAIL_OAUTH_CLIENT_SECRET:latest,GMAIL_TOKEN_ENCRYPTION_KEY=GMAIL_TOKEN_ENCRYPTION_KEY:latest \
+          --set-env-vars=PIPELINE_TASKS_BASE_URL=$$SERVICE_URL,CLOUD_TASKS_SERVICE_ACCOUNT_EMAIL=pipeline-service@$PROJECT_ID.iam.gserviceaccount.com,CLOUD_TASKS_OIDC_AUDIENCE=$$SERVICE_URL,WEAVIATE_COLLECTION_NAME=influencer_profiles,MAX_CONCURRENT_WEAVIATE_SEARCHES=12,MAX_CONCURRENT_LLM_REQUESTS=5,BRIGHTDATA_MAX_IN_FLIGHT=50,GMAIL_OAUTH_CLIENT_ID=562451436384-jg8cv8j37c3hove8m1nehkvst9uisp8v.apps.googleusercontent.com
+
+images:
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/pipeline-service-images/pipeline-service:$BUILD_ID'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

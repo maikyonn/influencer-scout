@@ -1,0 +1,59 @@
+{
+  "name": "@penny-platform/influencer-scout-api",
+  "version": "1.0.0",
+  "description": "Influencer Scout API (formerly pipeline-service)",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "start": "node dist/index.js",
+    "start:worker": "node dist/worker-main.js",
+    "dev": "ts-node --esm src/index.ts",
+    "dev:worker": "ts-node --esm src/worker-main.ts",
+    "dev:watch": "ts-node --esm --watch src/index.ts",
+    "test": "npm run build && vitest run",
+    "test:watch": "npm run build --silent && vitest",
+    "test:coverage": "npm run build --silent && vitest run --coverage",
+    "test:integration": "npm run build --silent && vitest run -c vitest.integration.config.ts",
+    "fixtures:fetch": "ts-node --esm scripts/fetch-external-fixtures.ts",
+    "fixtures:sanitize": "ts-node --esm scripts/sanitize-external-fixtures.ts",
+    "log:check": "bash scripts/check-logging.sh"
+  },
+  "keywords": [
+    "influencer-scout",
+    "api",
+    "typescript"
+  ],
+  "author": "Penny Platform",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "axios": "^1.13.2",
+    "bullmq": "^5.58.0",
+    "deepinfra": "^2.0.2",
+    "express": "^4.18.0",
+    "ioredis": "^5.6.2",
+    "openai": "^6.8.1",
+    "pg": "^8.16.3",
+    "weaviate-client": "^3.9.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^24.10.1",
+    "@types/pg": "^8.15.5",
+    "@types/supertest": "^6.0.3",
+    "@vitest/coverage-v8": "^3.2.4",
+    "supertest": "^7.1.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  },
+  "overrides": {
+    "jws": "4.0.1",
+    "node-forge": "1.3.3",
+    "qs": "6.14.1"
+  }
+}

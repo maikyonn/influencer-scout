@@ -1,0 +1,153 @@
+openapi: 3.0.3
+info:
+  title: Influencer Scout API
+  version: 0.1.0
+servers:
+  - url: https://api.penni-ai.com
+security:
+  - ApiKeyAuth: []
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200': { description: OK }
+        '503': { description: Degraded/Initializing }
+
+  /pipeline/start:
+    post:
+      summary: Start a pipeline job
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          schema: { type: string }
+          required: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [business_description]
+              properties:
+                business_description: { type: string }
+                top_n: { type: integer, minimum: 1, maximum: 1000, default: 30 }
+                weaviate_top_n: { type: integer, minimum: 10, maximum: 5000, nullable: true }
+                llm_top_n: { type: integer, minimum: 1, maximum: 1000, nullable: true }
+                min_followers: { type: integer, minimum: 0, nullable: true }
+                max_followers: { type: integer, minimum: 0, nullable: true }
+                platform: { type: string, enum: [instagram, tiktok], nullable: true }
+                request_id: { type: string, nullable: true }
+                exclude_profile_urls:
+                  type: array
+                  items: { type: string }
+                strict_location_matching: { type: boolean, default: false }
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job_id: { type: string, format: uuid }
+                  status: { type: string }
+                  message: { type: string }
+
+  /pipeline/jobs/{jobId}:
+    get:
+      summary: Get job status
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: OK }
+        '404': { description: Not found }
+
+  /pipeline/jobs/{jobId}/results:
+    get:
+      summary: Get final results
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: OK }
+        '409': { description: Not completed }
+
+  /pipeline/jobs/{jobId}/events:
+    get:
+      summary: Stream or poll job events
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: after
+          required: false
+          schema: { type: integer }
+        - in: query
+          name: format
+          required: false
+          schema: { type: string, enum: [json] }
+      responses:
+        '200': { description: OK }
+
+  /pipeline/jobs/{jobId}/cancel:
+    post:
+      summary: Request job cancellation
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: OK }
+
+  /weaviate/search:
+    post:
+      summary: Weaviate search (normalized)
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query: { type: string }
+                top_k: { type: integer, minimum: 1, maximum: 2000, default: 200 }
+                min_followers: { type: integer, minimum: 0, nullable: true }
+                max_followers: { type: integer, minimum: 0, nullable: true }
+                platform: { type: string, enum: [instagram, tiktok], nullable: true }
+                exclude_profile_urls:
+                  type: array
+                  items: { type: string }
+                alphas:
+                  type: array
+                  items: { type: number, minimum: 0, maximum: 1 }
+      responses:
+        '200': { description: OK }
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key

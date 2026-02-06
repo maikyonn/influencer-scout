@@ -1,0 +1,10 @@
+node_modules
+dist
+.env
+.git
+.gitignore
+*.md
+README.md
+test-deployment.sh
+dev-emulator.sh
+*.log

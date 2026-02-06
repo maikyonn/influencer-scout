@@ -1,0 +1,66 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: influencer-scout-postgres
+    environment:
+      POSTGRES_DB: influencer_scout
+      POSTGRES_USER: influencer
+      POSTGRES_PASSWORD: influencer
+    volumes:
+      - influencer_scout_pg:/var/lib/postgresql/data
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "127.0.0.1:5433:5432"
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: influencer-scout-redis
+    ports:
+      - "127.0.0.1:6380:6379"
+    restart: unless-stopped
+
+  influencer-scout-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: influencer-scout-api
+    ports:
+      - "8085:8080"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - PORT=8080
+      - DATABASE_URL=postgres://influencer:influencer@postgres:5432/influencer_scout
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  influencer-scout-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: influencer-scout-worker
+    command: ["node", "dist/worker-main.js"]
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgres://influencer:influencer@postgres:5432/influencer_scout
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
+volumes:
+  influencer_scout_pg:

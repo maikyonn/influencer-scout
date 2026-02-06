@@ -1,0 +1,20 @@
+{
+  "name": "influencer-scout",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "bun run --cwd apps/influencer-scout-api dev",
+    "dev:worker": "bun run --cwd apps/influencer-scout-api dev:worker",
+    "build": "bun run --workspaces build",
+    "test": "bun run --workspaces test",
+    "lint": "echo 'no lint configured yet'"
+  },
+  "engines": {
+    "bun": ">=1.2.0"
+  }
+}

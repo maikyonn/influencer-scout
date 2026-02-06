@@ -1,0 +1,2 @@
+- Keep `top_n <= 10` for interactive/admin runs.
+- Production secrets should live under `/opt/penny/secrets/*` and be referenced via env.
