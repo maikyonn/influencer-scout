@@ -6,7 +6,7 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+	<link rel="icon" href={favicon} type="image/svg+xml" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<title>Influencer Scout</title>
 	<meta
