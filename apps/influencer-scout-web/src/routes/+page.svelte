@@ -241,14 +241,17 @@
 
 	<main class="grid">
 		<section class="hero">
-			<div class="kicker" data-hero>Outreach, but make it fast.</div>
+			<div class="kicker" data-hero>
+				<span class="bean" aria-hidden="true"></span>
+				Brew a shortlist in minutes.
+			</div>
 			<h1 class="h1" data-hero>
 				Find creators that actually fit
 				<span class="grad">your brand.</span>
 			</h1>
 			<p class="sub" data-hero>
-				Run a quick semantic search, or spin up a full pipeline that enriches profiles and ranks them. Built for
-				operators, not dashboards.
+				Quick search for a first pour, or run the full pipeline to enrich profiles and rank them. Rustic UX, modern
+				stack.
 			</p>
 
 			<div class="hero-ctas" data-hero>
@@ -303,7 +306,7 @@
 						<textarea
 							id="business_description"
 							rows="4"
-							placeholder="Ex: DTC matcha brand. Looking for wellness creators who post recipe-style videos and feel authentic."
+							placeholder="Ex: Specialty coffee brand in Austin. Looking for cozy lifestyle creators who post recipe-style videos and feel authentic."
 							bind:value={businessDescription}
 						></textarea>
 					</div>
@@ -440,20 +443,25 @@
 		width: 44rem;
 		height: 44rem;
 		border-radius: 999px;
-		filter: blur(40px);
-		opacity: 0.55;
+		filter: blur(0.5px);
+		opacity: 0.28;
+		mix-blend-mode: multiply;
 	}
 
 	.b1 {
 		left: -12rem;
 		top: -10rem;
-		background: radial-gradient(circle at 30% 30%, color-mix(in oklab, var(--accent2) 70%, transparent), transparent 55%);
+		background:
+			radial-gradient(circle at 48% 52%, transparent 54%, color-mix(in oklab, var(--accent2) 38%, transparent) 55%, transparent 70%),
+			radial-gradient(circle at 46% 50%, transparent 60%, color-mix(in oklab, var(--accent) 20%, transparent) 61%, transparent 82%);
 	}
 
 	.b2 {
 		right: -18rem;
 		top: 5rem;
-		background: radial-gradient(circle at 30% 30%, color-mix(in oklab, var(--accent) 65%, transparent), transparent 60%);
+		background:
+			radial-gradient(circle at 48% 52%, transparent 56%, color-mix(in oklab, var(--accent) 34%, transparent) 57%, transparent 73%),
+			radial-gradient(circle at 50% 50%, transparent 64%, color-mix(in oklab, var(--accent2) 16%, transparent) 65%, transparent 86%);
 	}
 
 	.grain {
@@ -462,7 +470,7 @@
 		background-image:
 			url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"220\" height=\"220\"><filter id=\"n\"><feTurbulence type=\"fractalNoise\" baseFrequency=\"0.9\" numOctaves=\"3\" stitchTiles=\"stitch\"/></filter><rect width=\"220\" height=\"220\" filter=\"url(%23n)\" opacity=\"0.18\"/></svg>');
 		mix-blend-mode: overlay;
-		opacity: 0.35;
+		opacity: 0.18;
 		transform: rotate(10deg);
 	}
 
@@ -490,8 +498,10 @@
 		place-items: center;
 		font-weight: 800;
 		letter-spacing: -0.03em;
-		background: linear-gradient(135deg, color-mix(in oklab, var(--accent) 75%, black), color-mix(in oklab, var(--accent2) 70%, black));
-		box-shadow: 0 14px 45px color-mix(in oklab, var(--accent) 20%, transparent);
+		color: #fffaf4;
+		background: linear-gradient(135deg, color-mix(in oklab, var(--accent) 70%, #fff7ee), color-mix(in oklab, var(--accent2) 85%, black));
+		box-shadow: 0 14px 45px color-mix(in oklab, var(--accent2) 14%, transparent);
+		border: 1px solid color-mix(in oklab, var(--accent2) 22%, transparent);
 	}
 
 	.title {
@@ -511,8 +521,8 @@
 		border-radius: 999px;
 		text-decoration: none;
 		font-size: 0.9rem;
-		background: color-mix(in oklab, var(--paper) 45%, transparent);
-		border: 1px solid color-mix(in oklab, var(--ink) 14%, transparent);
+		background: color-mix(in oklab, white 76%, var(--paper));
+		border: 1px solid color-mix(in oklab, var(--ink) 10%, transparent);
 		transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
 	}
 
@@ -540,10 +550,28 @@
 		gap: 0.5rem;
 		padding: 0.4rem 0.75rem;
 		border-radius: 999px;
-		background: color-mix(in oklab, var(--paper) 40%, transparent);
-		border: 1px solid color-mix(in oklab, var(--ink) 12%, transparent);
+		background: color-mix(in oklab, white 78%, var(--paper));
+		border: 1px solid color-mix(in oklab, var(--ink) 10%, transparent);
 		color: var(--muted);
 		font-size: 0.92rem;
+	}
+
+	.bean {
+		width: 0.85rem;
+		height: 0.85rem;
+		border-radius: 999px;
+		background: linear-gradient(180deg, color-mix(in oklab, var(--accent) 75%, white), color-mix(in oklab, var(--accent2) 80%, black));
+		position: relative;
+		box-shadow: 0 8px 22px color-mix(in oklab, var(--accent2) 14%, transparent);
+	}
+
+	.bean::after {
+		content: '';
+		position: absolute;
+		inset: 0.13rem 0.34rem 0.13rem 0.34rem;
+		border-radius: 999px;
+		background: color-mix(in oklab, white 25%, transparent);
+		opacity: 0.45;
 	}
 
 	.h1 {
@@ -551,6 +579,8 @@
 		font-size: clamp(2.3rem, 3vw, 3.3rem);
 		line-height: 0.98;
 		letter-spacing: -0.04em;
+		font-family: var(--font-display);
+		font-variation-settings: 'wght' 650;
 	}
 
 	.grad {
@@ -580,9 +610,9 @@
 		padding: 0.8rem 1rem;
 		border-radius: 1rem;
 		font-weight: 680;
-		color: #0b0f1c;
-		background: linear-gradient(90deg, var(--accent), var(--accent2));
-		box-shadow: 0 20px 60px color-mix(in oklab, var(--accent) 25%, transparent);
+		color: #fff7ee;
+		background: linear-gradient(90deg, color-mix(in oklab, var(--accent) 92%, #fff7ee), var(--accent2));
+		box-shadow: 0 18px 55px color-mix(in oklab, var(--accent2) 14%, transparent);
 		transition: transform 140ms ease;
 	}
 
@@ -593,7 +623,7 @@
 	.cta.ghost {
 		background: transparent;
 		color: var(--ink);
-		border: 1px solid color-mix(in oklab, var(--ink) 16%, transparent);
+		border: 1px solid color-mix(in oklab, var(--ink) 14%, transparent);
 		box-shadow: none;
 	}
 
@@ -606,8 +636,8 @@
 	.mini-card {
 		padding: 0.9rem;
 		border-radius: var(--radius-lg);
-		background: color-mix(in oklab, var(--paper) 45%, transparent);
-		border: 1px solid color-mix(in oklab, var(--ink) 12%, transparent);
+		background: color-mix(in oklab, white 80%, var(--paper));
+		border: 1px solid color-mix(in oklab, var(--ink) 10%, transparent);
 	}
 
 	.mini-title {
@@ -624,11 +654,11 @@
 
 	.panel {
 		border-radius: var(--radius-xl);
-		background: color-mix(in oklab, var(--paper) 55%, transparent);
-		border: 1px solid color-mix(in oklab, var(--ink) 14%, transparent);
+		background: color-mix(in oklab, white 84%, var(--paper));
+		border: 1px solid color-mix(in oklab, var(--ink) 10%, transparent);
 		box-shadow:
-			0 25px 85px color-mix(in oklab, var(--ink) 12%, transparent),
-			inset 0 1px 0 rgba(255, 255, 255, 0.06);
+			0 25px 85px color-mix(in oklab, var(--accent2) 8%, transparent),
+			inset 0 1px 0 rgba(255, 255, 255, 0.65);
 		overflow: hidden;
 	}
 
@@ -637,8 +667,8 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: 0.75rem 0.85rem;
-		border-bottom: 1px solid color-mix(in oklab, var(--ink) 12%, transparent);
-		background: color-mix(in oklab, #000 15%, transparent);
+		border-bottom: 1px solid color-mix(in oklab, var(--ink) 10%, transparent);
+		background: color-mix(in oklab, white 88%, var(--paper));
 	}
 
 	.tabs {
@@ -657,8 +687,8 @@
 	}
 
 	.tab.active {
-		border-color: color-mix(in oklab, var(--accent2) 40%, transparent);
-		background: color-mix(in oklab, var(--accent2) 12%, transparent);
+		border-color: color-mix(in oklab, var(--accent) 35%, transparent);
+		background: color-mix(in oklab, var(--accent) 14%, transparent);
 	}
 
 	.hint {
@@ -695,8 +725,8 @@
 		box-sizing: border-box;
 		padding: 0.65rem 0.75rem;
 		border-radius: 0.9rem;
-		border: 1px solid color-mix(in oklab, var(--ink) 14%, transparent);
-		background: color-mix(in oklab, #000 25%, transparent);
+		border: 1px solid color-mix(in oklab, var(--ink) 12%, transparent);
+		background: color-mix(in oklab, white 92%, var(--paper));
 		color: var(--ink);
 		outline: none;
 	}
@@ -730,9 +760,9 @@
 		padding: 0.78rem 0.95rem;
 		border-radius: 1rem;
 		font-weight: 720;
-		color: #0b0f1c;
-		background: linear-gradient(90deg, var(--accent2), var(--accent));
-		box-shadow: 0 18px 50px color-mix(in oklab, var(--accent2) 18%, transparent);
+		color: #fff7ee;
+		background: linear-gradient(90deg, var(--accent2), color-mix(in oklab, var(--accent) 92%, #fff7ee));
+		box-shadow: 0 18px 50px color-mix(in oklab, var(--accent2) 16%, transparent);
 		transition: transform 140ms ease, filter 140ms ease;
 	}
 
@@ -765,8 +795,8 @@
 		gap: 0.75rem;
 		padding: 0.75rem 0.8rem;
 		border-radius: 1rem;
-		border: 1px solid color-mix(in oklab, var(--ink) 12%, transparent);
-		background: color-mix(in oklab, #000 22%, transparent);
+		border: 1px solid color-mix(in oklab, var(--ink) 10%, transparent);
+		background: color-mix(in oklab, white 88%, var(--paper));
 	}
 
 	.status-left {
@@ -780,8 +810,8 @@
 		gap: 0.5rem;
 		padding: 0.3rem 0.6rem;
 		border-radius: 999px;
-		background: color-mix(in oklab, var(--accent2) 14%, transparent);
-		border: 1px solid color-mix(in oklab, var(--accent2) 25%, transparent);
+		background: color-mix(in oklab, var(--accent) 12%, transparent);
+		border: 1px solid color-mix(in oklab, var(--accent) 22%, transparent);
 		width: fit-content;
 	}
 
@@ -817,8 +847,8 @@
 
 	.block {
 		border-radius: 1.25rem;
-		border: 1px solid color-mix(in oklab, var(--ink) 12%, transparent);
-		background: color-mix(in oklab, #000 20%, transparent);
+		border: 1px solid color-mix(in oklab, var(--ink) 10%, transparent);
+		background: color-mix(in oklab, white 88%, var(--paper));
 		padding: 0.85rem;
 		display: grid;
 		gap: 0.65rem;
@@ -836,8 +866,8 @@
 		padding: 0.75rem;
 		border-radius: 1rem;
 		border: 1px solid color-mix(in oklab, var(--ink) 10%, transparent);
-		background: color-mix(in oklab, #000 28%, transparent);
-		color: color-mix(in oklab, var(--ink) 80%, transparent);
+		background: color-mix(in oklab, white 92%, var(--paper));
+		color: color-mix(in oklab, var(--ink) 88%, transparent);
 		max-height: 12rem;
 		overflow: auto;
 		font-size: 0.83rem;

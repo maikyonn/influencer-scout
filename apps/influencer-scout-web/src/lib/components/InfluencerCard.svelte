@@ -87,9 +87,9 @@
 		font-size: 0.78rem;
 		padding: 0.25rem 0.55rem;
 		border-radius: 999px;
-		background: color-mix(in oklab, var(--accent) 18%, transparent);
-		color: color-mix(in oklab, var(--accent) 90%, black);
-		border: 1px solid color-mix(in oklab, var(--accent) 35%, transparent);
+		background: color-mix(in oklab, var(--accent) 16%, transparent);
+		color: color-mix(in oklab, var(--accent2) 82%, var(--ink));
+		border: 1px solid color-mix(in oklab, var(--accent) 28%, transparent);
 		white-space: nowrap;
 	}
 

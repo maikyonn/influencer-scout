@@ -114,7 +114,7 @@
 		position: relative;
 		height: 0.8rem;
 		border-radius: 999px;
-		background: color-mix(in oklab, var(--ink) 10%, transparent);
+		background: color-mix(in oklab, var(--ink) 10%, white);
 		overflow: hidden;
 	}
 
@@ -123,8 +123,8 @@
 		top: 0;
 		bottom: 0;
 		border-radius: 999px;
-		background: linear-gradient(90deg, var(--accent), var(--accent2));
-		box-shadow: 0 10px 30px color-mix(in oklab, var(--accent) 25%, transparent);
+		background: linear-gradient(90deg, color-mix(in oklab, var(--accent) 92%, #fff7ee), var(--accent2));
+		box-shadow: 0 10px 30px color-mix(in oklab, var(--accent2) 14%, transparent);
 		transform-origin: 50% 50%;
 	}
 
